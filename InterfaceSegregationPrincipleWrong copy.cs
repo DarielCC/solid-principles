@@ -29,8 +29,12 @@ public class Cliente {
     }
 }
 
+public interface IClienteRepository  {
+    public void Adicionar(Cliente cliente);
+    public IEnurable<Cliente> Listar();
+}
 
-public class ClienteRepository {
+public class ClienteWriteRepository : IClienteRepository {
     public void AdicionarCliente(Cliente cliente) {
         using (var cn = new SqlConnection()){
             var cmd = new SqlCommand();
@@ -50,15 +54,29 @@ public class ClienteRepository {
             cmd.ExecuteNonQuery();
         }
     }
+
+    public IEnumerable<Cliente> Listar() {
+        return throw new Exception("Not implemented"); 
+    }
+}
+
+public class ClienteReadRepository : IClienteRepository {
+    public void AdicionarCliente(Cliente cliente) {
+        return throw new Exception("Not implemented"); 
+    }
+
+    public IEnumerable<Cliente> Listar() {
+        return new List<Cliente>(); 
+    }
 }
 
 public class ClienteService {
-    private readonly ClienteRepository _clienteRepository;
-    private readonly EmailService _emailService;
+    private readonly IClienteRepository _clienteRepository;
+    private readonly IEmailService _emailService;
 
-    public ClienteService() {
-        _clienteRepository = new ClienteRepository();
-        _emailService = new EmailService();
+    public ClienteService(IEmailService emailService, IClienteRepository clienteRepository) {
+        _clienteRepository = clienteRepository;
+        _emailService = emailService;
     }
 
     public void AdicionarCliente(string nome, string email, string cpf) {
@@ -70,7 +88,11 @@ public class ClienteService {
     }
 }
 
-public class EmailService {
+public interface IEmailService {
+    void EnviarEmail(string email);
+}
+
+public class EmailService : IEmailService {
     public void EnviarEmail(string email) {
         var mail = new MailMessage("teste@.com", email);
         var client = new SmptClient {

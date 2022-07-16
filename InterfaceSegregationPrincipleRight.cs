@@ -29,8 +29,15 @@ public class Cliente {
     }
 }
 
+public interface IClienteWriteRepository  {
+    public void Adicionar(Cliente cliente);
+}
 
-public class ClienteRepository {
+public interface IClienteReadRepository  {
+    public IEnurable<Cliente> Listar();
+}
+
+public class ClienteWriteRepository : IClienteWriteRepository {
     public void AdicionarCliente(Cliente cliente) {
         using (var cn = new SqlConnection()){
             var cmd = new SqlCommand();
@@ -52,25 +59,42 @@ public class ClienteRepository {
     }
 }
 
-public class ClienteService {
-    private readonly ClienteRepository _clienteRepository;
-    private readonly EmailService _emailService;
+public class ClienteReadRepository : IClienteReadRepository {
 
-    public ClienteService() {
-        _clienteRepository = new ClienteRepository();
-        _emailService = new EmailService();
+    public IEnumerable<Cliente> Listar() {
+        return new List<Cliente>(); 
+    }
+}
+
+public class ClienteService {
+    private readonly IClienteWriteRepository _clienteWriteRepository;
+    private readonly IClienteReadRepository _clienteReadRepository;
+    private readonly IEmailService _emailService;
+
+    public ClienteService(IEmailService emailService, IClienteWriteRepository clienteWriteRepository, IClienteReadRepository clienteReadRepository) {
+        _clienteWriteRepository = clienteWriteRepository;
+        _clienteReadRepository = clienteReadRepository;
+        _emailService = emailService;
     }
 
     public void AdicionarCliente(string nome, string email, string cpf) {
         var cliente = new Cliente(nome, email, cpf);
         cliente.Validar();
 
-        _clienteRepository.AdicionarCliente(cliente);
+        _clienteWriteRepository.AdicionarCliente(cliente);
         _emailService.EnviarEmail(cliente.Email);
+    }
+
+    public IEnumerable<Cliente> ListarCliente() {
+        return _clienteReadRepository.Listar();
     }
 }
 
-public class EmailService {
+public interface IEmailService {
+    void EnviarEmail(string email);
+}
+
+public class EmailService : IEmailService {
     public void EnviarEmail(string email) {
         var mail = new MailMessage("teste@.com", email);
         var client = new SmptClient {
